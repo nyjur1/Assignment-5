@@ -27,6 +27,30 @@
  * Returns 0 on success, or -1 if the file cannot be opened or mapped.
  */
 int loadimage_mmap(char* filename, struct image* image) {
+	int fd = open(filename, O_RDONLY);
+	if (fd == -1) return -1;
+
+	size_t header_size = sizeof(struct image);
+	size_t pixel_size = image->width * image->height * sizeof(struct pixel);
+	size_t total_size = (header_size + pixel_size);
+
+	void* mapped = mmap(NULL,total_size, PROT_READ, MAP_SHARED, fd, 0 );
+
+
+	if(mapped == MAP_FAILED){
+		close(fd);
+		return -1; 
+	}
+
+	struct image* mapped_image = (struct image*)mapped;
+	*image = *mapped_image;
+
+	char* after_header = (char*)mapped + header_size;
+	image->pixels = (struct pixel*)after_header;
+
+	close(fd);
+
+	
 	return 0;
 }
 
@@ -47,6 +71,45 @@ int loadimage_mmap(char* filename, struct image* image) {
  * A failed flush to disk is reported but still returns 0.
  */
 int saveimage_mmap(char* filename, struct image* image) {
+
+	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC,
+		      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+
+	if (fd == -1) return -1;
+
+	size_t header_size = sizeof(struct image);
+	size_t pixel_size = image->width * image->height * sizeof(struct pixel);
+	size_t total_size = (header_size + pixel_size);
+
+	ftruncate(fd, total_size);
+
+	void* mapped = mmap(NULL,total_size, PROT_WRITE, MAP_SHARED, fd, 0 );
+
+	if(mapped == MAP_FAILED){
+		close(fd);
+		return -1; 
+	}
+
+
+	struct image* mapped_image = (struct image*)mapped;
+	*mapped_image = *image;
+
+	char* after_header = (char*)mapped + header_size;
+	struct pixel* p_destination = (struct pixel*)after_header;
+	struct pixel* p_source =image-> pixels;
+
+	int num_pixels = image->width*image->height;
+	for(int i=0;i<num_pixels;i++){
+		p_destination[i]=p_source[i];
+	}
+	int result = msync(mapped, total_size, MS_SYNC);
+	if(result==-1){
+		perror("msync");
+	}
+
+	munmap(mapped, total_size);
+	close(fd);
 	return 0;
 }
 

@@ -33,6 +33,55 @@ struct pixel add(struct pixel p1, struct pixel p2) {
  *
  */
 struct image* apply_kernel(struct image* img, int* kernel, int ksize, float normalize) {
+    struct image* output = malloc(sizeof(struct image));
+    output->width = img->width;
+    output->height = img->height;
+    output->pixels = malloc(sizeof(struct pixel) * img->width* img->height);
 
+    int center = ksize/2;
+
+    for(int row = 0; row<img->height; row++){
+        for(int col = 0; col<img->width; col++){
+            struct pixel total = {0,0,0};
+
+            for(int krow= 0; krow<ksize; krow++){
+                for(int kcol=0; kcol<ksize; kcol++){
+
+                    int image_row = row + krow - center;
+                    int image_col = col + kcol - center;
+
+                    struct pixel cur_pixel = {0,0,0};
+
+                    if(image_row>=0 && image_row<img->height && image_col>=0 && image_col<img->width){
+
+                        int img_index = image_row * img->width + image_col;
+                        cur_pixel = img->pixels[img_index];
+
+                    }
+
+                        int kernel_index = krow*ksize+kcol;
+
+                        int kernel_num = kernel[kernel_index];
+
+                        struct pixel product = mul(cur_pixel, kernel_num);
+
+                        total = add(total, product);
+
+                    }
+
+                }
+            
+            
+            total = mul(total, normalize);
+            int output_index = row*output->width+col;
+            output->pixels[output_index]=total;
+
+        
+        }
+    }
+
+    return output; 
 }
+
+    
 

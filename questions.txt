@@ -1,0 +1,7 @@
+(1) An instance of my program uses, in USS, 402771968 Bytes. 
+(2) An instance of my program uses, in USS, 402771968 Bytes. 
+(3) The processes' memory share the input image in memory and finishes faster,
+while the others load their own copy. 
+(4)A major page fault occurs when CPU requests memory that is not stored in physical memory
+yet. A minor page fault, when there is no connection between memory in RAM and the 
+virtual address table. 
